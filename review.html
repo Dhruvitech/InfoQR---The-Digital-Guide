@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reviews - InfoQR</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Header Container -->
+  <div id="header-container"></div>
+  
+  <div class="main-container">
+    <h2>User Reviews</h2>
+    <p class="tagline">See what others are saying about InfoQR or leave your own review.</p>
+    
+    <div class="container">
+      <div class="review-form">
+        <h3>Write a Review</h3>
+        <form id="review-form">
+          <div class="form-group">
+            <label for="name">Your Name</label>
+            <input type="text" class="form-control" id="name" placeholder="Enter your name" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="rating">Rating</label>
+            <div class="rating-input">
+              <i class="fas fa-star rating-star" data-rating="1"></i>
+              <i class="fas fa-star rating-star" data-rating="2"></i>
+              <i class="fas fa-star rating-star" data-rating="3"></i>
+              <i class="fas fa-star rating-star" data-rating="4"></i>
+              <i class="fas fa-star rating-star" data-rating="5"></i>
+              <input type="hidden" id="rating" value="0">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="comment">Your Review</label>
+            <textarea class="form-control" id="comment" rows="4" placeholder="Share your experience with InfoQR" required></textarea>
+          </div>
+          
+          <button type="submit" class="btn">Submit Review</button>
+        </form>
+      </div>
+      
+      <div class="reviews-container" style="margin-top: 3rem;">
+        <h3>Recent Reviews</h3>
+        
+        <!-- Sample reviews - these would be dynamically generated in a real implementation -->
+        <div class="review-card">
+          <div class="review-header">
+            <div class="reviewer-info">
+              <img src="images/default_profile.jpg" alt="User" class="reviewer-img">
+              <div>
+                <h4>Manish Rajput</h4>
+                <div class="review-rating">
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                </div>
+              </div>
+            </div>
+            <div class="review-date">2 days ago</div>
+          </div>
+          <p class="review-text">InfoQR sample review.</p>
+        </div>
+        
+        <div class="review-card">
+          <div class="review-header">
+            <div class="reviewer-info">
+              <img src="images/default_profile.jpg" alt="User" class="reviewer-img">
+              <div>
+                <h4>Jagruti Patel</h4>
+                <div class="review-rating">
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="far fa-star"></i>
+                </div>
+              </div>
+            </div>
+            <div class="review-date">1 week ago</div>
+          </div>
+          <p class="review-text">This is sample review.</p>
+        </div>
+      </div>
+    </div>
+    </div>
+  
+  <!-- Footer Container -->
+  <div id="footer-container"></div>
+  
+  <!-- Include shared components -->
+  <script src="components/header.js"></script>
+  <script src="components/footer.js"></script>
+  <script>
+    // Star rating functionality
+    const ratingStars = document.querySelectorAll('.rating-star');
+    const ratingInput = document.getElementById('rating');
+    
+    ratingStars.forEach(star => {
+      star.addEventListener('click', function() {
+        const rating = this.getAttribute('data-rating');
+        ratingInput.value = rating;
+        
+        // Update star display
+        ratingStars.forEach(s => {
+          const sRating = s.getAttribute('data-rating');
+          if (sRating <= rating) {
+            s.classList.add('active');
+          } else {
+            s.classList.remove('active');
+          }
+        });
+      });
+    });
+    
+    // Review form submission
+    document.getElementById('review-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const rating = document.getElementById('rating').value;
+      const comment = document.getElementById('comment').value;
+      
+      if (!name || rating === '0' || !comment) {
+        alert('Please fill in all fields and provide a rating');
+        return;
+      }
+      
+      // In a real implementation, this would call the backend
+      // For now, we'll just simulate a submission
+      alert('Review submission will be implemented with backend integration');
+      this.reset();
+      ratingStars.forEach(s => s.classList.remove('active'));
+      ratingInput.value = '0';
+    });
+  </script>
+  
+  <style>
+    /* Additional styles for review page */
+    .review-card {
+      background: var(--white);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .review-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .reviewer-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .reviewer-img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .review-rating {
+      color: #ffc107;
+      margin-top: 0.25rem;
+    }
+    
+    .review-date {
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+    
+    .review-text {
+      color: var(--text-dark);
+      line-height: 1.6;
+    }
+    
+    .rating-input {
+      display: flex;
+      gap: 0.5rem;
+      font-size: 1.5rem;
+      color: #d1d5db;
+      margin-top: 0.5rem;
+    }
+    
+    .rating-star {
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    
+    .rating-star:hover,
+    .rating-star.active {
+      color: #ffc107;
+    }
+  </style>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InfoQR - The Digital Guide</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+  <!-- Header Container -->
+  <div id="header-container"></div>
+
+  <div class="main-container">
+    <h2>Welcome to InfoQR</h2>
+    <p class="tagline">Transform the way you share and access information with InfoQR.</p>
+
+    <div class="card-container">
+      <!-- Generate QR Card -->
+      <div class="card">
+        <div class="card-icon">
+          <i class="fas fa-qrcode"></i>
+        </div>
+        <h3>Generate QR</h3>
+        <p>Easily create QR codes for your items, events, or guides.</p>
+        <a href="generate.html" class="btn">Generate</a>
+      </div>
+
+      <!-- Scan QR Card -->
+      <div class="card">
+        <div class="card-icon">
+          <i class="fas fa-camera"></i>
+        </div>
+        <h3>Scan QR</h3>
+        <p>Point your camera or upload an image to reveal details instantly.</p>
+        <a href="scan.html" class="btn btn-secondary">Scan</a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Footer Container -->
+  <div id="footer-container"></div>
+
+  <!-- Include shared components -->
+  <script src="components/header.js"></script>
+  <script src="components/footer.js"></script>
+
+</body>
+
+</html>

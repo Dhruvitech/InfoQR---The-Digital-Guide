@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>QR Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    .container {
+      width: 90%;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #102765;
+      color: #fff;
+    }
+
+    td img {
+      max-width: 60px;
+      height: auto;
+      border-radius: 4px;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-left: 5px;
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: #fff;
+    }
+
+    .btn-primary1 {
+      background: linear-gradient(135deg, #28a745, #218838);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #5a6268);
+      color: #fff;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #28a745, #218838);
+      color: #fff;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(3px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .popup {
+      background: #fff;
+      padding: 25px;
+      width: 450px;
+      border-radius: 12px;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      animation: popIn 0.3s ease-out;
+
+      max-height: 90vh;
+      overflow-y: auto;
+      z-index: 10000;
+    }
+
+    @keyframes popIn {
+      0% {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .popup input,
+    .popup textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 0;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .popup input:focus,
+    .popup textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+      outline: none;
+    }
+
+    .file-upload-container {
+      margin: 10px 0;
+    }
+
+    .file-upload-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .file-upload-input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .file-upload-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      border: 2px dashed #2563eb;
+      border-radius: 10px;
+      background-color: rgba(37, 99, 235, 0.05);
+      transition: all 0.3s ease;
+      min-height: 50px;
+    }
+
+    .file-upload-box:hover,
+    .file-upload-box.dragover {
+      background-color: rgba(37, 99, 235, 0.1);
+      border-color: #1e40af;
+    }
+
+    .file-upload-box i {
+      font-size: 36px;
+      color: #2563eb;
+      margin-bottom: 10px;
+    }
+
+    .file-upload-box p {
+      margin: 5px 0;
+      color: #555;
+      font-size: 14px;
+    }
+
+    .file-upload-box p span {
+      color: #2563eb;
+      font-weight: bold;
+    }
+
+    .file-name {
+      font-style: italic;
+      color: #888 !important;
+      margin-top: 8px !important;
+    }
+
+    .file-preview {
+      max-width: 100%;
+      max-height: 150px;
+      margin-top: 10px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .qr-box {
+      text-align: center;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      background-color: #f8f9fa;
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .close-btn {
+      position: sticky;
+      top: 10px;
+      float: right;
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #333;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      z-index: 10001;
+    }
+
+    .close-btn:hover {
+      color: #fff;
+      background: linear-gradient(135deg, #ff4c5e, #e02e3d);
+    }
+
+    body.noscroll {
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header Container -->
+  <div id="header-container"></div>
+
+  <div class="main-container">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h3>All Items</h3>
+        <small>Manage all items or add new</small>
+      </div>
+      <div>
+        <button class="btn btn-primary1" onclick="openPopup()"><i class="fas fa-plus"></i> Add Item</button>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>Token</th>
+          <th>Name</th>
+          <th>Image</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody id="itemTable"></tbody>
+    </table>
+  </div>
+
+  <!-- Popup Form -->
+  <div class="overlay" id="popupOverlay">
+    <div class="popup">
+      <button class="close-btn" onclick="closePopup()">×</button>
+      <h2 style="color: #1804b4;">Add Item</h2>
+      <form id="itemForm">
+        <h5>Name :</h5>
+        <input type="text" id="name" placeholder="Enter Name" required>
+        <h5>Description :</h5>
+        <textarea id="desc" placeholder="Enter Description"></textarea>
+        <h5>Upload Photo :</h5>
+        <div class="file-upload-container">
+          <div class="file-upload-wrapper">
+            <input type="file" id="image" accept="image/*" class="file-upload-input">
+            <div class="file-upload-box">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <p>Drag & Drop your image or <span>Browse</span></p>
+              <p class="file-name">No file selected</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px; text-align:right;">
+          <button type="submit" class="btn btn-primary">Generate QR</button>
+          <button type="button" class="btn btn-secondary" onclick="closePopup()">Cancel</button>
+        </div>
+      </form>
+
+      <div class="qr-box" id="qrBox">
+        <h4>Generated QR Code:</h4>
+        <div style="display: flex; align-items: center; gap: 15px; margin-top:10px;">
+          <div id="qrCode"></div>
+          <p id="tokenText"></p>
+          <button class="btn btn-success" id="downloadBtn">Download QR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Container -->
+  <div id="footer-container"></div>
+
+  <script src="components/header.js"></script>
+  <script src="components/footer.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script>
+    let itemId = 1;
+
+    function openPopup() {
+      document.getElementById("popupOverlay").style.display = "flex";
+      document.body.classList.add("noscroll");
+    }
+
+    function closePopup() {
+      document.getElementById("popupOverlay").style.display = "none";
+      document.body.classList.remove("noscroll");
+      document.getElementById("itemForm").reset();
+      document.getElementById("qrBox").style.display = "none";
+      document.getElementById("qrCode").innerHTML = "";
+      const preview = document.querySelector(".file-preview");
+      if (preview) preview.style.display = "none";
+      document.querySelector(".file-name").textContent = "No file selected";
+    }
+
+    const fileInput = document.getElementById("image");
+    const fileBox = document.querySelector(".file-upload-box");
+    const fileName = document.querySelector(".file-name");
+
+    fileInput.addEventListener("change", function () {
+      if (this.files && this.files[0]) {
+        fileName.textContent = this.files[0].name;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          let preview = document.querySelector(".file-preview");
+          if (!preview) {
+            preview = document.createElement("img");
+            preview.className = "file-preview";
+            fileBox.appendChild(preview);
+          }
+          preview.src = e.target.result;
+          preview.style.display = "block";
+        };
+        reader.readAsDataURL(this.files[0]);
+      } else {
+        fileName.textContent = "No file selected";
+        const preview = document.querySelector(".file-preview");
+        if (preview) preview.style.display = "none";
+      }
+    });
+
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+      fileBox.addEventListener(eventName, function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+    });
+
+    ["dragenter", "dragover"].forEach(eventName => {
+      fileBox.addEventListener(eventName, function () {
+        this.classList.add("dragover");
+      }, false);
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+      fileBox.addEventListener(eventName, function () {
+        this.classList.remove("dragover");
+      }, false);
+    });
+
+    fileBox.addEventListener("drop", function (e) {
+      fileInput.files = e.dataTransfer.files;
+      const event = new Event("change", { bubbles: true });
+      fileInput.dispatchEvent(event);
+    }, false);
+
+    document.getElementById("itemForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value;
+      const desc = document.getElementById("desc").value;
+      const imgFile = document.getElementById("image").files[0];
+      const token = "TKN" + Math.floor(Math.random() * 10000);
+
+      let imgHTML = "";
+      if (imgFile) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          imgHTML = `<img src="${event.target.result}" alt="Item">`;
+          addRowAndGenerateQR(name, desc, imgHTML, token);
+        };
+        reader.readAsDataURL(imgFile);
+      } else {
+        addRowAndGenerateQR(name, desc, "No image", token);
+      }
+    });
+
+    function addRowAndGenerateQR(name, desc, imgHTML, token) {
+      const table = document.getElementById("itemTable");
+      const row = table.insertRow();
+      row.insertCell(0).innerText = itemId++;
+      row.insertCell(1).innerText = token;
+      row.insertCell(2).innerText = name;
+      row.insertCell(3).innerHTML = imgHTML;
+      row.insertCell(4).innerText = desc;
+
+      const qrDiv = document.getElementById("qrCode");
+      qrDiv.innerHTML = "";
+      new QRCode(qrDiv, {
+        text: token,
+        width: 150,
+        height: 150
+      });
+
+      document.getElementById("tokenText").innerText = token;
+      document.getElementById("qrBox").style.display = "block";
+    }
+
+    document.getElementById("downloadBtn").addEventListener("click", function () {
+      const qrImage = document.querySelector("#qrCode img");
+      if (qrImage) {
+        const token = document.getElementById("tokenText").innerText;
+        const link = document.createElement("a");
+        link.href = qrImage.src;
+        link.download = `QR_${token}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    });
+  </script>
+
+</body>
+
+</html>

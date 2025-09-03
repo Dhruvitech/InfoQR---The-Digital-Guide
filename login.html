@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - InfoQR</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Header Container -->
+  <div id="header-container"></div>
+  
+  <div class="container">
+    <h2>Login</h2>
+    <form>
+      <label>Email</label>
+      <input type="email" placeholder="Enter your email" required>
+      <label>Password</label>
+      <input type="password" placeholder="Enter your password" required>
+      <div style="text-align: center;"><button type="submit" class="btn">Login</button>
+      <button type="submit" class="btn">Back</button></div>
+    </form>
+     <div class="signup">
+      New User? <a href="register.html">Signup</a>
+    </div>
+  </div>
+  
+  <!-- Footer Container -->
+  <div id="footer-container"></div>
+  
+  <!-- Include shared components -->
+  <script src="components/header.js"></script>
+  <script src="components/footer.js"></script>
+  <script>
+    // Basic login functionality
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      if (!email || !password) {
+        alert('Please enter both email and password');
+        return;
+      }
+      
+      // In a real implementation, this would call the backend
+      // For now, we'll just simulate a login
+      alert('Login functionality will be implemented with backend integration');
+    });
+  </script>
+</body>
+</html>

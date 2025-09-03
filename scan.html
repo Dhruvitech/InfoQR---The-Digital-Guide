@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scan QR - InfoQR</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      background: #f9fafb;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 550px;
+      margin: 60px auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+      color: #2563eb;
+    }
+
+    p {
+      color: #4b5563;
+      margin-bottom: 25px;
+    }
+
+    /* File Upload Styling */
+    .file-upload-container {
+      margin: 20px 0;
+    }
+
+    .file-upload-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .file-upload-input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .file-upload-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 25px;
+      border: 2px dashed #2563eb;
+      border-radius: 10px;
+      background-color: rgba(37, 99, 235, 0.05);
+      transition: all 0.3s ease;
+      min-height: 120px;
+    }
+
+    .file-upload-box:hover,
+    .file-upload-box.dragover {
+      background-color: rgba(37, 99, 235, 0.1);
+      border-color: #1e40af;
+    }
+
+    .file-upload-box i {
+      font-size: 36px;
+      color: #2563eb;
+      margin-bottom: 10px;
+    }
+
+    .file-upload-box p {
+      margin: 5px 0;
+      color: #555;
+      font-size: 14px;
+    }
+
+    .file-upload-box p span {
+      color: #2563eb;
+      font-weight: bold;
+    }
+
+    .file-name {
+      font-style: italic;
+      color: #888 !important;
+      margin-top: 8px !important;
+    }
+
+    .file-preview {
+      max-width: 100%;
+      max-height: 150px;
+      margin-top: 10px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .btn-camera {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 16px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-camera:hover {
+      background: #1e40af;
+    }
+
+    video {
+      margin-top: 20px;
+      width: 100%;
+      max-height: 300px;
+      border-radius: 10px;
+      display: none;
+    }
+
+    .result {
+      background: #e0f2fe;
+      border: 1px solid #60a5fa;
+      padding: 15px 20px;
+      border-radius: 10px;
+      font-weight: bold;
+      min-height: 50px;
+      font-size: 1rem;
+      color: #1e3a8a;
+      margin-top: 25px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header Container -->
+  <div id="header-container"></div>
+
+  <div class="container">
+    <h2>Scan QR Code</h2>
+    <p>Upload a QR image or use your camera to scan.</p>
+
+    <!-- File Upload Box -->
+    <div class="file-upload-container">
+      <div class="file-upload-wrapper">
+        <input type="file" id="fileInput" accept="image/*" class="file-upload-input">
+        <div class="file-upload-box">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <p>Drag & Drop your QR image or <span>Browse</span></p>
+          <p class="file-name">No file selected</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Camera Button -->
+    <button class="btn-camera" id="startCamera"><i class="fas fa-camera"></i> Use Camera</button>
+    <video id="video" autoplay></video>
+
+    <!-- Result -->
+    <div class="result" id="result"><a href="view.html">Scanned result will appear here...</a></div>
+  </div>
+
+  <!-- Footer Container -->
+  <div id="footer-container"></div>
+
+  <!-- Include shared components -->
+  <script src="components/header.js"></script>
+  <script src="components/footer.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+  <script>
+    const result = document.getElementById("result");
+    const fileInput = document.getElementById("fileInput");
+    const fileBox = document.querySelector(".file-upload-box");
+    const fileName = document.querySelector(".file-name");
+    const video = document.getElementById("video");
+    const startCamera = document.getElementById("startCamera");
+    let cameraActive = false;
+    let stream;
+
+    // --- File Upload QR Scan ---
+    fileInput.addEventListener("change", handleFile);
+    fileBox.addEventListener("drop", (e) => {
+      e.preventDefault();
+      fileInput.files = e.dataTransfer.files;
+      handleFile({ target: { files: e.dataTransfer.files } });
+    });
+    ["dragenter", "dragover"].forEach(evt =>
+      fileBox.addEventListener(evt, () => fileBox.classList.add("dragover"))
+    );
+    ["dragleave", "drop"].forEach(evt =>
+      fileBox.addEventListener(evt, () => fileBox.classList.remove("dragover"))
+    );
+
+    function handleFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      fileName.textContent = file.name;
+
+      const reader = new FileReader();
+      reader.onload = function () {
+        const img = new Image();
+        img.onload = function () {
+          const canvas = document.createElement("canvas");
+          const maxDim = 500;
+          let w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            const ratio = Math.min(maxDim / w, maxDim / h);
+            w *= ratio; h *= ratio;
+          }
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          const imageData = ctx.getImageData(0, 0, w, h);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          result.textContent = code ? "QR Content: " + code.data : "No QR code found in image.";
+        };
+        img.src = reader.result;
+        showPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function showPreview(src) {
+      let preview = document.querySelector(".file-preview");
+      if (!preview) {
+        preview = document.createElement("img");
+        preview.className = "file-preview";
+        fileBox.appendChild(preview);
+      }
+      preview.src = src;
+      preview.style.display = "block";
+    }
+
+    // --- Camera QR Scan ---
+    startCamera.addEventListener("click", async () => {
+      if (!cameraActive) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          video.srcObject = stream;
+          video.style.display = "block";
+          cameraActive = true;
+          startCamera.textContent = "Stop Camera";
+          scanCamera();
+        } catch (err) {
+          alert("Camera access denied or not available.");
+        }
+      } else {
+        stopCamera();
+      }
+    });
+
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      video.style.display = "none";
+      cameraActive = false;
+      startCamera.textContent = "Use Camera";
+    }
+
+    function scanCamera() {
+      if (!cameraActive) return;
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code) {
+        result.textContent = "QR Content: " + code.data;
+        stopCamera();
+        return;
+      }
+      requestAnimationFrame(scanCamera);
+    }
+  </script>
+
+</body>
+
+</html>

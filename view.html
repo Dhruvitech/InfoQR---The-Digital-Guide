@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Item Details - InfoQR</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+
+    .custom-container {
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      background-color: #ededed;
+      padding: 20px;
+      max-width: 500px;
+      margin: 40px auto;
+    }
+
+    .custom-box {
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      background-color: #ffffff;
+      padding: 15px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .last-box {
+      border-radius: 6px;
+      background-color: #dbe6ff;
+      color: #ffffff;
+      padding: 20px;
+      font-size: 15px;
+      text-align: justify;
+    }
+
+    img {
+      max-height: 120px;
+      max-width: 120px;
+      border-radius: 5px;
+      margin-top: 8px;
+    }
+
+    .spkButton,
+    .stpButton {
+      padding: 8px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .spkButton {
+      background-color: #08a131;
+    }
+
+    .stpButton {
+      background-color: #e01b24;
+    }
+
+    .nextScan {
+      padding: 10px 15px;
+      background-color: #2563eb;
+      color: #fff;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .nextScan:hover {
+      background-color: #1d4ed8;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header Container -->
+  <div id="header-container"></div>
+
+  <div class="custom-container">
+    <!-- Scan Again -->
+    <div class="custom-box">
+      <a href="scan.html"><button class="nextScan">📷 Scan Next QR</button></a>
+    </div>
+
+    <!-- Item Title + Image -->
+    <div class="custom-box">
+      <h3>Sample Museum Artifact</h3>
+      <img src="images/default.png" alt="Sample Item">
+    </div>
+
+    <!-- Speak / Stop -->
+    <div class="custom-box">
+      <button id="speakButton" class="spkButton">🔊 Speak</button>
+      <button id="stopButton" class="stpButton">🔇 Stop</button>
+    </div>
+
+    <!-- Description -->
+    <div class="last-box">
+      <p>
+        This is a demo description for a sample museum artifact.
+        It was discovered in the early 19th century and represents
+        a significant part of cultural heritage. In this, information would be fetched dynamically.
+      </p>
+    </div>
+  </div>
+  <!-- Footer Container -->
+  <div id="footer-container"></div>
+
+  <!-- Include shared components -->
+  <script src="components/header.js"></script>
+  <script src="components/footer.js"></script>
+  <script>
+    // Text-to-Speech logic
+    const speakButton = document.getElementById('speakButton');
+    const stopButton = document.getElementById('stopButton');
+    const descriptionText = document.querySelector('.last-box p').innerText;
+
+    let voices = [];
+
+    function populateVoices() {
+      voices = speechSynthesis.getVoices();
+    }
+
+    populateVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = populateVoices;
+    }
+
+    speakButton.addEventListener('click', () => {
+      const speech = new SpeechSynthesisUtterance(descriptionText);
+      if (voices.length > 0) {
+        speech.voice = voices[0]; // pick first available voice
+      }
+      speech.rate = 1;
+      speech.pitch = 1;
+      speechSynthesis.speak(speech);
+    });
+
+    stopButton.addEventListener('click', () => {
+      speechSynthesis.cancel();
+    });
+  </script>
+
+</body>
+
+</html>
