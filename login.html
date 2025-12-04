@@ -10,44 +10,125 @@
 <body>
   <!-- Header Container -->
   <div id="header-container"></div>
-  
-  <div class="container">
-    <h2>Login</h2>
-    <form>
-      <label>Email</label>
-      <input type="email" placeholder="Enter your email" required>
-      <label>Password</label>
-      <input type="password" placeholder="Enter your password" required>
-      <div style="text-align: center;"><button type="submit" class="btn">Login</button>
-      <button type="submit" class="btn">Back</button></div>
-    </form>
-     <div class="signup">
-      New User? <a href="register.html">Signup</a>
+
+  <div class="main-container">
+    <h2>Login to InfoQR</h2>
+    <p class="tagline">Access your QR dashboard and manage items.</p>
+    
+    <div class="container">
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" class="form-control" placeholder="Enter your email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="btn">Login</button>
+        <p style="text-align: center; margin-top: 1rem;">
+          Don't have an account? <a href="register.html">Register here</a>
+        </p>
+      </form>
     </div>
   </div>
-  
+
   <!-- Footer Container -->
   <div id="footer-container"></div>
-  
-  <!-- Include shared components -->
+
   <script src="components/header.js"></script>
   <script src="components/footer.js"></script>
+
+  <!-- Global CSRF Script (First – Fetches Token on Load) -->
   <script>
-    // Basic login functionality
-    document.getElementById('login-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      
-      if (!email || !password) {
-        alert('Please enter both email and password');
+    let csrfToken = localStorage.getItem('csrf') || '';
+
+    async function getCSRF() {
+      try {
+        console.log('Fetching CSRF...');  // Debug (remove later)
+        const response = await fetch('api/auth.php?action=get_csrf');
+        if (!response.ok) throw new Error('CSRF fetch failed: ' + response.status);
+        const data = await response.json();
+        csrfToken = data.csrf;
+        localStorage.setItem('csrf', csrfToken);
+        console.log('CSRF fetched successfully');  // Debug
+        return csrfToken;
+      } catch (err) {
+        console.error('CSRF fetch error:', err);
+        // Fallback
+        if (!csrfToken) {
+          csrfToken = btoa(Date.now().toString() + Math.random().toString());
+          localStorage.setItem('csrf', csrfToken);
+          console.log('Fallback CSRF generated');  // Debug
+        }
+        return csrfToken;
+      }
+    }
+
+    // Fetch CSRF immediately on load
+    getCSRF();
+  </script>
+
+  <!-- Login Script (Second – Full Handler with Debug) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Login DOM loaded');  // Debug
+
+      const form = document.getElementById('loginForm');
+      if (!form) {
+        console.error('Form not found – check id="loginForm"');
         return;
       }
-      
-      // In a real implementation, this would call the backend
-      // For now, we'll just simulate a login
-      alert('Login functionality will be implemented with backend integration');
+      console.log('Form found, adding listener');  // Debug
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();  // Stop reload
+        console.log('Submit triggered');  // Debug
+
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!email || !password) {
+          alert('Please enter both email and password');
+          return;
+        }
+
+        if (!csrfToken) {
+          alert('Security error: Token missing. Refresh page.');
+          return;
+        }
+
+        console.log('Submitting login for:', email);  // Debug
+        console.log('Using CSRF:', csrfToken.substring(0, 10) + '...');  // Debug (partial)
+
+        const formData = new FormData();
+        formData.append('action', 'login');
+        formData.append('email', email);
+        formData.append('password', password);
+        formData.append('csrf', csrfToken);
+
+        try {
+          console.log('Sending POST to auth.php...');  // Debug
+          const response = await fetch('api/auth.php', { method: 'POST', body: formData });
+          console.log('Response status:', response.status);  // Debug
+          const data = await response.json();
+          console.log('Response data:', data);  // Debug
+
+          if (data.success) {
+            console.log('Login success – redirecting');  // Debug
+            window.location.href = 'index.html';  // Redirect to home
+          } else {
+            alert('Login failed: ' + (data.error || 'Unknown error'));
+            console.error('Login error details:', data);
+          }
+        } catch (err) {
+          console.error('Fetch error:', err);
+          alert('Network error: ' + err.message + '. Check if server is running.');
+        }
+      });
+      console.log('Submit listener added');  // Debug
     });
   </script>
+
 </body>
 </html>
