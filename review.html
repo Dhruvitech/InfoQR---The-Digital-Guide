@@ -6,140 +6,6 @@
   <title>Reviews - InfoQR</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body>
-  <!-- Header Container -->
-  <div id="header-container"></div>
-  
-  <div class="main-container">
-    <h2>User Reviews</h2>
-    <p class="tagline">See what others are saying about InfoQR or leave your own review.</p>
-    
-    <div class="container">
-      <div class="review-form">
-        <h3>Write a Review</h3>
-        <form id="review-form">
-          <div class="form-group">
-            <label for="name">Your Name</label>
-            <input type="text" class="form-control" id="name" placeholder="Enter your name" required>
-          </div>
-          
-          <div class="form-group">
-            <label for="rating">Rating</label>
-            <div class="rating-input">
-              <i class="fas fa-star rating-star" data-rating="1"></i>
-              <i class="fas fa-star rating-star" data-rating="2"></i>
-              <i class="fas fa-star rating-star" data-rating="3"></i>
-              <i class="fas fa-star rating-star" data-rating="4"></i>
-              <i class="fas fa-star rating-star" data-rating="5"></i>
-              <input type="hidden" id="rating" value="0">
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="comment">Your Review</label>
-            <textarea class="form-control" id="comment" rows="4" placeholder="Share your experience with InfoQR" required></textarea>
-          </div>
-          
-          <button type="submit" class="btn">Submit Review</button>
-        </form>
-      </div>
-      
-      <div class="reviews-container" style="margin-top: 3rem;">
-        <h3>Recent Reviews</h3>
-        
-        <!-- Sample reviews - these would be dynamically generated in a real implementation -->
-        <div class="review-card">
-          <div class="review-header">
-            <div class="reviewer-info">
-              <img src="images/default_profile.jpg" alt="User" class="reviewer-img">
-              <div>
-                <h4>Manish Rajput</h4>
-                <div class="review-rating">
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                </div>
-              </div>
-            </div>
-            <div class="review-date">2 days ago</div>
-          </div>
-          <p class="review-text">InfoQR sample review.</p>
-        </div>
-        
-        <div class="review-card">
-          <div class="review-header">
-            <div class="reviewer-info">
-              <img src="images/default_profile.jpg" alt="User" class="reviewer-img">
-              <div>
-                <h4>Jagruti Patel</h4>
-                <div class="review-rating">
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="far fa-star"></i>
-                </div>
-              </div>
-            </div>
-            <div class="review-date">1 week ago</div>
-          </div>
-          <p class="review-text">This is sample review.</p>
-        </div>
-      </div>
-    </div>
-    </div>
-  
-  <!-- Footer Container -->
-  <div id="footer-container"></div>
-  
-  <!-- Include shared components -->
-  <script src="components/header.js"></script>
-  <script src="components/footer.js"></script>
-  <script>
-    // Star rating functionality
-    const ratingStars = document.querySelectorAll('.rating-star');
-    const ratingInput = document.getElementById('rating');
-    
-    ratingStars.forEach(star => {
-      star.addEventListener('click', function() {
-        const rating = this.getAttribute('data-rating');
-        ratingInput.value = rating;
-        
-        // Update star display
-        ratingStars.forEach(s => {
-          const sRating = s.getAttribute('data-rating');
-          if (sRating <= rating) {
-            s.classList.add('active');
-          } else {
-            s.classList.remove('active');
-          }
-        });
-      });
-    });
-    
-    // Review form submission
-    document.getElementById('review-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const name = document.getElementById('name').value;
-      const rating = document.getElementById('rating').value;
-      const comment = document.getElementById('comment').value;
-      
-      if (!name || rating === '0' || !comment) {
-        alert('Please fill in all fields and provide a rating');
-        return;
-      }
-      
-      // In a real implementation, this would call the backend
-      // For now, we'll just simulate a submission
-      alert('Review submission will be implemented with backend integration');
-      this.reset();
-      ratingStars.forEach(s => s.classList.remove('active'));
-      ratingInput.value = '0';
-    });
-  </script>
   
   <style>
     /* Additional styles for review page */
@@ -203,6 +69,227 @@
     .rating-star.active {
       color: #ffc107;
     }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--text-dark);
+      font-weight: 500;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
   </style>
+</head>
+<body>
+  <div id="header-container"></div>
+  
+  <div class="main-container">
+    <h2>User Reviews</h2>
+    <p class="tagline">See what others are saying about InfoQR or leave your own review.</p>
+    
+    <div class="container">
+      <div class="review-form">
+        <h3>Write a Review</h3>
+        <form id="reviewForm">
+          <div class="form-group">
+            <label for="rating">Rating</label>
+            <div class="rating-input">
+              <i class="fas fa-star rating-star" data-rating="1"></i>
+              <i class="fas fa-star rating-star" data-rating="2"></i>
+              <i class="fas fa-star rating-star" data-rating="3"></i>
+              <i class="fas fa-star rating-star" data-rating="4"></i>
+              <i class="fas fa-star rating-star" data-rating="5"></i>
+              <input type="hidden" id="rating" value="0">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="comment">Your Review</label>
+            <textarea class="form-control" id="comment" rows="4" placeholder="Share your experience with InfoQR (min 10 characters)" required></textarea>
+          </div>
+          
+          <button type="submit" class="btn">Submit Review</button>
+        </form>
+      </div>
+      
+      <div class="reviews-container" id="reviewsContainer" style="margin-top: 3rem;">
+        </div>
+    </div>
+  </div>
+  
+  <div id="footer-container"></div>
+  
+  <script src="components/header.js"></script>
+  <script src="components/footer.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      // FIX 1: Enforce login immediately for the review submission page
+      const authData = await checkLogin();
+      
+      const ratingStars = document.querySelectorAll('.rating-star');
+      const ratingInput = document.getElementById('rating');
+      
+      // Original star rating functionality
+      ratingStars.forEach(star => {
+        star.addEventListener('click', function() {
+          const rating = this.getAttribute('data-rating');
+          ratingInput.value = rating;
+          
+          // Update star display
+          ratingStars.forEach(s => {
+            const sRating = s.getAttribute('data-rating');
+            if (sRating <= rating) {
+              s.classList.add('active');
+            } else {
+              s.classList.remove('active');
+            }
+          });
+        });
+      });
+
+      // Load reviews from backend
+      async function loadReviews() {
+        try {
+          // Note: get_all is public, so no login check here
+          const response = await fetch('api/review.php?action=get_all'); // FIX 4: Corrected path from reviews.php to review.php
+          const reviews = await response.json();
+          const container = document.getElementById('reviewsContainer');
+          let html = '<h3>Recent Reviews</h3>';
+          reviews.forEach(review => {
+            const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+            html += `
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="reviewer-info">
+                    <img src="images/default_profile.jpg" alt="User" class="reviewer-img"> 
+                    <div>
+                      <h4>${review.full_name}</h4>
+                      <div class="review-rating">${stars}</div>
+                    </div>
+                  </div>
+                  <div class="review-date">${new Date(review.created_at).toLocaleDateString()}</div>
+                </div>
+                <p class="review-text">${review.comment}</p>
+              </div>
+            `;
+          });
+          if (reviews.length === 0) html += '<p>No reviews yet. Be the first!</p>';
+          container.innerHTML = html;
+        } catch (err) {
+          console.error('Error loading reviews:', err);
+          document.getElementById('reviewsContainer').innerHTML = '<h3>Recent Reviews</h3><p>Error loading reviews.</p>';
+        }
+      }
+      loadReviews();  // Initial load
+
+      // Form submit (AJAX to backend)
+      document.getElementById('reviewForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        // FIX 3: Removed client-side name check/handling
+        const rating = document.getElementById('rating').value;
+        const comment = document.getElementById('comment').value;
+        
+        if (rating === '0' || !comment) {
+          alert('Please provide a rating and a comment');
+          return;
+        }
+        
+        // This check is duplicated in backend (review.php), but good practice
+        if (comment.length < 10) {
+          alert('Review must be at least 10 characters');
+          return;
+        }
+
+        // FIX 2: Ensure CSRF token is ready before submitting
+        const currentCsrfToken = await getCSRF(); 
+        if (!currentCsrfToken) { alert('Security error: CSRF token missing.'); return; }
+        
+        const formData = new FormData();
+        formData.append('action', 'add');
+        formData.append('rating', rating);
+        formData.append('comment', comment);
+        formData.append('csrf', currentCsrfToken); // Use the fetched token
+
+        try {
+          const response = await fetch('api/review.php', { method: 'POST', body: formData }); // FIX 4: Corrected path
+          const data = await response.json();
+          if (data.success) {
+            alert('Review submitted successfully!');
+            this.reset();
+            ratingStars.forEach(s => s.classList.remove('active'));
+            ratingInput.value = '0';
+            loadReviews();  // Refresh list
+          } else {
+            alert('Submit failed: ' + (data.error || 'Unknown error'));
+          }
+        } catch (err) {
+          alert('Error: ' + err.message);
+          console.error('Review submit error:', err);
+        }
+      });
+    });
+  </script>
+
+  <script>
+  // Global CSRF Token - Fetch from server
+  let csrfToken = localStorage.getItem('csrf') || ''; 
+
+  async function getCSRF() {
+    // Only fetch if token is missing or expired (simple check: always fetch for robustness)
+    try {
+      const response = await fetch('api/auth.php?action=get_csrf');
+      if (!response.ok) throw new Error('CSRF fetch failed');
+      const data = await response.json();
+      csrfToken = data.csrf;
+      localStorage.setItem('csrf', csrfToken);  // Cache for session
+      return csrfToken;
+    } catch (err) {
+      console.error('CSRF fetch error:', err);
+      return null; // Return null on real failure, forces check before POST
+    }
+  }
+
+  // Fetch CSRF on page load (for forms)
+  document.addEventListener('DOMContentLoaded', async function() {
+    await getCSRF();  // Get token early
+  });
+
+  // Check login status (for protected pages)
+  async function checkLogin() {
+    try {
+      const response = await fetch('api/auth.php?action=login_status');
+      const data = await response.json();
+      if (!data.logged_in) {
+        // Use alert or a better UI notification before redirecting
+        alert('You must be logged in to access this page.');
+        window.location.href = 'login.html';
+      }
+      return data;
+    } catch (err) {
+      console.error('Auth check error:', err);
+      window.location.href = 'login.html';
+      return { logged_in: false };
+    }
+  }
+</script>
 </body>
 </html>
