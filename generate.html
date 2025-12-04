@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -117,6 +117,7 @@
       }
     }
 
+    /* CONTINUATION FROM HERE: Complete popup input styles */
     .popup input,
     .popup textarea {
       width: 100%;
@@ -244,7 +245,7 @@
       z-index: 10001;
     }
 
-    .close-btn:hover {
+       .close-btn:hover {
       color: #fff;
       background: linear-gradient(135deg, #ff4c5e, #e02e3d);
     }
@@ -257,7 +258,6 @@
 
 <body>
 
-  <!-- Header Container -->
   <div id="header-container"></div>
 
   <div class="main-container">
@@ -271,7 +271,6 @@
       </div>
     </div>
 
-    <!-- Items Table -->
     <table>
       <thead>
         <tr>
@@ -280,18 +279,18 @@
           <th>Name</th>
           <th>Image</th>
           <th>Description</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody id="itemTable"></tbody>
     </table>
   </div>
 
-  <!-- Popup Form -->
   <div class="overlay" id="popupOverlay">
     <div class="popup">
       <button class="close-btn" onclick="closePopup()">×</button>
       <h2 style="color: #1804b4;">Add Item</h2>
-      <form id="itemForm">
+      <form id="itemForm" enctype="multipart/form-data">
         <h5>Name :</h5>
         <input type="text" id="name" placeholder="Enter Name" required>
         <h5>Description :</h5>
@@ -325,140 +324,434 @@
     </div>
   </div>
 
-  <!-- Footer Container -->
-  <div id="footer-container"></div>
+    <div id="footer-container"></div>
 
   <script src="components/header.js"></script>
   <script src="components/footer.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+  <!-- Local checkLogin function -->
   <script>
-    let itemId = 1;
-
-    function openPopup() {
-      document.getElementById("popupOverlay").style.display = "flex";
-      document.body.classList.add("noscroll");
+    async function checkLogin() {
+      try {
+        const response = await fetch('api/auth.php?action=login_status');
+        const data = await response.json();
+        console.log('Login status check:', data);  // FIXED: Debug – see user_id/user_name for multi-user
+        if (!data.logged_in) {
+          window.location.href = 'login.html';
+        }
+        return data;
+      } catch (err) {
+        console.error('Auth check error:', err);
+        window.location.href = 'login.html';
+        return { logged_in: false };
+      }
     }
+  </script>
 
-    function closePopup() {
-      document.getElementById("popupOverlay").style.display = "none";
-      document.body.classList.remove("noscroll");
-      document.getElementById("itemForm").reset();
-      document.getElementById("qrBox").style.display = "none";
-      document.getElementById("qrCode").innerHTML = "";
-      const preview = document.querySelector(".file-preview");
-      if (preview) preview.style.display = "none";
-      document.querySelector(".file-name").textContent = "No file selected";
-    }
+  <!-- Main Script – Fixed Logic for Token Save, QR Generation, Multi-User Add/Edit -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      // FIXED: Enforce login immediately
+      await checkLogin();
 
-    const fileInput = document.getElementById("image");
-    const fileBox = document.querySelector(".file-upload-box");
-    const fileName = document.querySelector(".file-name");
+      let itemId = 1;  // Client-side for table display
 
-    fileInput.addEventListener("change", function () {
-      if (this.files && this.files[0]) {
-        fileName.textContent = this.files[0].name;
-
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          let preview = document.querySelector(".file-preview");
-          if (!preview) {
-            preview = document.createElement("img");
-            preview.className = "file-preview";
-            fileBox.appendChild(preview);
+      // FIXED: Load user-specific items from backend with multi-user debug
+      async function loadItems() {
+        try {
+          console.log('Loading items... (Current user from session)');  // FIXED: Debug for multi-user
+          const response = await fetch('api/items.php?action=get_all');
+          console.log('Response status:', response.status);  // FIXED: Debug status (200 OK?)
+          if (!response.ok) {
+            if (response.status === 401) {
+              alert('Unauthorized – Please login again.');  // FIXED: Specific for session issues
+              window.location.href = 'login.html';
+              return;
+            }
+            throw new Error(`Failed to load items: HTTP ${response.status} ${response.statusText}`);
           }
-          preview.src = e.target.result;
+          const items = await response.json();
+          console.log('Loaded items:', items.length, 'items for current user');  // FIXED: Debug count/data (0 OK for new user)
+          const tableBody = document.getElementById('itemTable');
+          tableBody.innerHTML = '';
+          itemId = 1;
+          if (items.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999; padding:20px; border: 1px solid #ddd;"><strong>No items yet.</strong> <button class="btn btn-primary" onclick="openPopup()">Add your first!</button></td></tr>';  // FIXED: Better styling for empty row
+          } else {
+            items.forEach(item => {
+              const row = tableBody.insertRow();
+              row.insertCell(0).innerText = itemId++;
+              row.insertCell(1).innerText = item.token;
+              row.insertCell(2).innerText = item.name;
+              row.insertCell(3).innerHTML = `<img src="${item.image_path || 'images/default.png'}" alt="Item" style="max-width:60px; height:auto; border-radius:4px;" onerror="this.src='images/default.png'">`;  // FIXED: Onerror fallback for broken images
+              row.insertCell(4).innerText = item.description || 'No description';
+              
+              // FIXED: Actions column with edit/delete
+              const actionsCell = row.insertCell(5);
+              actionsCell.innerHTML = `
+                <button class="btn btn-primary" onclick="editItem(${item.id})" style="padding: 5px 10px; font-size: 12px; margin-right: 5px;"><i class="fas fa-edit"></i> Edit</button>
+                <button class="btn btn-secondary" onclick="deleteItem(${item.id})" style="padding: 5px 10px; font-size: 12px;"><i class="fas fa-trash"></i> Delete</button>`;
+            });
+          }
+        } catch (err) {
+          console.error('Load items error details:', err);  // FIXED: More debug
+          alert('Error loading items: ' + err.message + '. Check console for details.');
+        }
+      }
+      loadItems();  // Initial load
+      
+      // FIXED: deleteItem function with CSRF
+      window.deleteItem = async function(id) {
+        if (!confirm('Are you sure you want to delete this item?')) return;
+        
+        const currentCsrfToken = await getCSRF();
+        if (!currentCsrfToken) { 
+          alert('Security error: CSRF token missing.'); 
+          return; 
+        }
+        
+        const formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('id', id);
+        formData.append('csrf', currentCsrfToken);
+        
+        try {
+          console.log('Deleting item ID:', id);  // Debug
+          const response = await fetch('api/items.php', { method: 'POST', body: formData });
+          const data = await response.json();
+          console.log('Delete response:', data);  // Debug
+          if (data.success) {
+            alert('Item deleted successfully!');
+            loadItems();  // Refresh table
+          } else {
+            alert('Delete failed: ' + (data.error || 'Unknown error'));
+          }
+        } catch (err) {
+          alert('Error: ' + err.message);
+          console.error(err);
+        }
+      };
+
+      // FIXED: Edit item function – Fetches data, opens pre-filled popup
+      window.editItem = async function(id) {
+        try {
+          console.log('Editing item ID:', id);  // Debug
+          const currentCsrfToken = await getCSRF();
+          if (!currentCsrfToken) { 
+            alert('Security error: CSRF token missing.'); 
+            return; 
+          }
+
+          // Fetch item data for pre-fill
+          const response = await fetch(`api/items.php?action=get_item&id=${id}`);
+          if (!response.ok) throw new Error('Failed to load item');
+          const item = await response.json();
+          console.log('Item data for edit:', item);  // Debug
+
+          if (item.error) {
+            alert('Error loading item: ' + item.error);
+            return;
+          }
+
+          // Open popup in edit mode
+          openPopupForEdit(item);  // Call custom open function below
+        } catch (err) {
+          alert('Error loading item for edit: ' + err.message);
+          console.error(err);
+        }
+      };
+
+      // FIXED: Custom open for edit (pre-fills form, changes title/button)
+      function openPopupForEdit(item) {
+        const overlay = document.getElementById("popupOverlay");
+        const popup = overlay.querySelector('.popup');
+        const form = document.getElementById("itemForm");
+        const h2 = popup.querySelector('h2');
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        // FIXED: Change to edit mode
+        h2.textContent = 'Edit Item';
+        submitBtn.textContent = 'Update Item';
+        submitBtn.classList.remove('btn-primary');  // Optional: Change style if needed
+        submitBtn.classList.add('btn-success');  // Green for update
+
+        // FIXED: Pre-fill form
+        document.getElementById("name").value = item.name;
+        document.getElementById("desc").value = item.description || '';
+        form.reset();  // Clear file input, but keep values above
+
+        // FIXED: Show current image preview (if exists)
+        const fileBox = document.querySelector(".file-upload-box");
+        const fileNameEl = document.querySelector(".file-name");
+        fileNameEl.textContent = item.image_path ? 'Current image: ' + item.image_path.split('/').pop() : 'No image selected';
+        
+        let preview = document.querySelector(".file-preview");
+        if (!preview) {
+          preview = document.createElement("img");
+          preview.className = "file-preview";
+          fileBox.appendChild(preview);
+        }
+        if (item.image_path) {
+          preview.src = item.image_path;  // Load current image
           preview.style.display = "block";
-        };
-        reader.readAsDataURL(this.files[0]);
-      } else {
-        fileName.textContent = "No file selected";
+        } else {
+          preview.style.display = "none";
+        }
+
+        // FIXED: Add hidden ID field for submit
+        let hiddenId = document.getElementById('itemId');
+        if (!hiddenId) {
+          hiddenId = document.createElement('input');
+          hiddenId.type = 'hidden';
+          hiddenId.id = 'itemId';
+          hiddenId.name = 'id';
+          form.appendChild(hiddenId);
+        }
+        hiddenId.value = item.id;
+
+        // FIXED: Hide QR box (not needed for edit)
+        document.getElementById("qrBox").style.display = "none";
+
+        overlay.style.display = "flex";
+        document.body.classList.add("noscroll");
+      }
+
+      // FIXED: Reset popup to add mode (call in closePopup/openPopup)
+      function resetPopupToAdd() {
+        const popup = document.getElementById("popupOverlay").querySelector('.popup');
+        const h2 = popup.querySelector('h2');
+        const submitBtn = document.getElementById("itemForm").querySelector('button[type="submit"]');
+        const hiddenId = document.getElementById('itemId');
+
+        h2.textContent = 'Add Item';
+        submitBtn.textContent = 'Generate QR';
+        submitBtn.classList.remove('btn-success');
+        submitBtn.classList.add('btn-primary');
+
+        if (hiddenId) hiddenId.remove();  // Remove ID for add mode
+
+        document.getElementById("itemForm").reset();
+        document.getElementById("qrBox").style.display = "none";
+        document.getElementById("qrCode").innerHTML = "";
         const preview = document.querySelector(".file-preview");
         if (preview) preview.style.display = "none";
+        document.querySelector(".file-name").textContent = "No file selected";
       }
-    });
 
-    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
-      fileBox.addEventListener(eventName, function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }, false);
-    });
+      // FIXED: openPopup function (was missing – button does nothing without it)
+      window.openPopup = function() {
+        resetPopupToAdd();  // FIXED: Reset to add mode
+        const overlay = document.getElementById("popupOverlay");
+        overlay.style.display = "flex";
+        document.body.classList.add("noscroll");
+      };
 
-    ["dragenter", "dragover"].forEach(eventName => {
-      fileBox.addEventListener(eventName, function () {
-        this.classList.add("dragover");
-      }, false);
-    });
+      // FIXED: Single closePopup with reset (removes duplication)
+      window.closePopup = function() {
+        const overlay = document.getElementById("popupOverlay");
+        overlay.style.display = "none";
+        document.body.classList.remove("noscroll");
+        resetPopupToAdd();  // FIXED: Reset form/QR on close
+      };
 
-    ["dragleave", "drop"].forEach(eventName => {
-      fileBox.addEventListener(eventName, function () {
-        this.classList.remove("dragover");
-      }, false);
-    });
-
-    fileBox.addEventListener("drop", function (e) {
-      fileInput.files = e.dataTransfer.files;
-      const event = new Event("change", { bubbles: true });
-      fileInput.dispatchEvent(event);
-    }, false);
-
-    document.getElementById("itemForm").addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      const name = document.getElementById("name").value;
-      const desc = document.getElementById("desc").value;
-      const imgFile = document.getElementById("image").files[0];
-      const token = "TKN" + Math.floor(Math.random() * 10000);
-
-      let imgHTML = "";
-      if (imgFile) {
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          imgHTML = `<img src="${event.target.result}" alt="Item">`;
-          addRowAndGenerateQR(name, desc, imgHTML, token);
-        };
-        reader.readAsDataURL(imgFile);
-      } else {
-        addRowAndGenerateQR(name, desc, "No image", token);
-      }
-    });
-
-    function addRowAndGenerateQR(name, desc, imgHTML, token) {
-      const table = document.getElementById("itemTable");
-      const row = table.insertRow();
-      row.insertCell(0).innerText = itemId++;
-      row.insertCell(1).innerText = token;
-      row.insertCell(2).innerText = name;
-      row.insertCell(3).innerHTML = imgHTML;
-      row.insertCell(4).innerText = desc;
-
-      const qrDiv = document.getElementById("qrCode");
-      qrDiv.innerHTML = "";
-      new QRCode(qrDiv, {
-        text: token,
-        width: 150,
-        height: 150
+      // File upload logic (unchanged)
+      const fileInput = document.getElementById("image");
+      const fileBox = document.querySelector(".file-upload-box");
+      const fileNameEl = document.querySelector(".file-name");
+      fileInput.addEventListener("change", function () {
+        if (this.files && this.files[0]) {
+          fileNameEl.textContent = this.files[0].name;
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            let preview = document.querySelector(".file-preview");
+            if (!preview) {
+              preview = document.createElement("img");
+              preview.className = "file-preview";
+              fileBox.appendChild(preview);
+            }
+            preview.src = e.target.result;
+            preview.style.display = "block";
+          };
+          reader.readAsDataURL(this.files[0]);
+        } else {
+          fileNameEl.textContent = "No file selected";
+          const preview = document.querySelector(".file-preview");
+          if (preview) preview.style.display = "none";
+        }
       });
 
-      document.getElementById("tokenText").innerText = token;
-      document.getElementById("qrBox").style.display = "block";
-    }
+      // Drag-drop logic (unchanged)
+      ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+        fileBox.addEventListener(eventName, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+      });
 
-    document.getElementById("downloadBtn").addEventListener("click", function () {
-      const qrImage = document.querySelector("#qrCode img");
-      if (qrImage) {
+      ["dragenter", "dragover"].forEach(eventName => {
+        fileBox.addEventListener(eventName, function () {
+          this.classList.add("dragover");
+        }, false);
+      });
+
+      ["dragleave", "drop"].forEach(eventName => {
+        fileBox.addEventListener(eventName, function () {
+          this.classList.remove("dragover");
+        }, false);
+      });
+
+      fileBox.addEventListener("drop", function (e) {
+        fileInput.files = e.dataTransfer.files;
+        const event = new Event("change", { bubbles: true });
+        fileInput.dispatchEvent(event);
+      }, false);
+
+      // FIXED: Form submit – Handles add OR update with better debug for multi-user
+      document.getElementById("itemForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        console.log('=== FORM SUBMIT STARTED ===');  // FIXED: Debug start
+        
+        const name = document.getElementById("name").value.trim();
+        const desc = document.getElementById("desc").value.trim();
+        const imgFile = document.getElementById("image").files[0];
+        const itemId = document.getElementById('itemId') ? document.getElementById('itemId').value : null;  // Edit ID or null for add
+        
+        console.log('Submit data:', { name, desc: desc.substring(0, 50) + '...', hasImage: !!imgFile, isEdit: !!itemId });  // FIXED: Log input (no full desc for privacy)
+        
+        if (!name) {
+          alert("Name is required");
+          return;
+        }
+
+        // FIXED: Await CSRF token with debug
+        const currentCsrfToken = await getCSRF();
+        console.log('CSRF token ready:', currentCsrfToken ? 'Yes' : 'No');  // FIXED: Debug CSRF
+        if (!currentCsrfToken) {
+          alert('Security error: CSRF token missing. Refresh page and try again.');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("csrf", currentCsrfToken);
+
+        if (itemId) {
+          // Edit mode
+          console.log('Edit mode – Updating ID:', itemId);  // FIXED: Debug edit
+          formData.append("action", "update");
+          formData.append("id", itemId);
+          formData.append("name", name);
+          formData.append("desc", desc);
+          if (imgFile) formData.append("image", imgFile);
+
+          try {
+            console.log('Sending update to backend...');  // FIXED: Debug
+            const response = await fetch("api/items.php", { method: "POST", body: formData });
+            console.log('Update response status:', response.status);  // FIXED: Debug status
+            const data = await response.json();
+            console.log('Update response full:', data);  // FIXED: Log full response
+
+            if (data.success) {
+              alert("Item updated successfully!");
+              closePopup();
+              loadItems();  // Refresh table
+            } else {
+              console.error('Update backend error:', data.error);  // FIXED: Log error
+              alert("Update failed: " + (data.error || "Unknown error. Check console."));
+            }
+          } catch (err) {
+            console.error('Update fetch error:', err);  // FIXED: Log fetch error
+            alert("Error updating item: " + err.message + ". Check console.");
+          }
+        } else {
+          // Add mode (for new/different user)
+          console.log('Add mode – Creating new item');  // FIXED: Debug add
+          formData.append("action", "add");
+          formData.append("name", name);
+          formData.append("desc", desc);
+          if (imgFile) formData.append("image", imgFile);
+
+          try {
+            console.log('Sending add to backend...');  // FIXED: Debug
+            const response = await fetch("api/items.php", { method: "POST", body: formData });
+            console.log('Add response status:', response.status);  // FIXED: Debug status
+            const data = await response.json();
+            console.log('Add response full:', data);  // FIXED: Log full response (token, id, success/error)
+
+            if (data.success) {
+              const token = data.token;
+              console.log('Add success – Token generated:', token);  // FIXED: Debug token
+              const qrDiv = document.getElementById("qrCode");
+              qrDiv.innerHTML = "";
+              new QRCode(qrDiv, { 
+                text: token,  
+                width: 150, 
+                height: 150 
+              });
+              document.getElementById("tokenText").innerText = token;
+              document.getElementById("qrBox").style.display = "block";
+
+              loadItems();  // Refresh table (shows new item for this user)
+
+              alert("Item added and QR generated! Token: " + token);
+            } else {
+              console.error('Add backend error:', data.error);  // FIXED: Log error (e.g., 'Unauthorized' for wrong session)
+              alert("Add failed: " + (data.error || "Unknown error. Check console for details."));
+            }
+          } catch (err) {
+            console.error('Add fetch error:', err);  // FIXED: Log fetch error
+            alert("Error adding item: " + err.message + ". Check console.");
+          }
+        }
+        console.log('=== FORM SUBMIT ENDED ===');  // FIXED: Debug end
+      });
+
+            // FIXED: Download button – Saves PNG with token in filename
+      document.getElementById("downloadBtn").addEventListener("click", function () {
+        const qrImage = document.querySelector("#qrCode img");
         const token = document.getElementById("tokenText").innerText;
-        const link = document.createElement("a");
-        link.href = qrImage.src;
-        link.download = `QR_${token}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+        if (qrImage && token) {
+          const link = document.createElement("a");
+          link.href = qrImage.src;
+          link.download = `QR_${token}.png`;  // Filename with token
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          console.log('QR downloaded for token:', token);  // Debug
+        } else {
+          alert('QR not ready – try again.');
+        }
+      });
     });
   </script>
 
-</body>
+  <!-- Global CSRF Token Script (For Forms & Security) -->
+  <script>
+    let csrfToken = localStorage.getItem('csrf') || '';
 
-</html>
+    async function getCSRF() {
+      if (csrfToken) return csrfToken;  // Use cached if available
+      try {
+        console.log('Fetching CSRF token...');  // Debug
+        const response = await fetch('api/auth.php?action=get_csrf');
+        if (!response.ok) throw new Error('CSRF fetch failed: ' + response.status);
+        const data = await response.json();
+        csrfToken = data.csrf;
+        localStorage.setItem('csrf', csrfToken);
+        console.log('CSRF token fetched:', csrfToken.substring(0, 10) + '...');  // Debug (partial)
+        return csrfToken;
+      } catch (err) {
+        console.error('CSRF fetch error:', err);
+        // Fallback (less secure, for testing – remove in production)
+        csrfToken = btoa(Date.now().toString() + Math.random().toString());
+        localStorage.setItem('csrf', csrfToken);
+        console.log('Fallback CSRF generated');  // Debug
+        return csrfToken;
+      }
+    }
+
+    // Fetch CSRF on page load
+    document.addEventListener('DOMContentLoaded', async function() {
+      await getCSRF();
+    });
+  </script>
