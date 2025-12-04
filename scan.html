@@ -33,7 +33,6 @@
       margin-bottom: 25px;
     }
 
-    /* File Upload Styling */
     .file-upload-container {
       margin: 20px 0;
     }
@@ -96,14 +95,6 @@
       margin-top: 8px !important;
     }
 
-    .file-preview {
-      max-width: 100%;
-      max-height: 150px;
-      margin-top: 10px;
-      border-radius: 8px;
-      display: none;
-    }
-
     .btn-camera {
       display: inline-block;
       margin-top: 15px;
@@ -139,20 +130,31 @@
       font-size: 1rem;
       color: #1e3a8a;
       margin-top: 25px;
+      text-align: left;
+    }
+
+    .error {
+      color: #dc2626;
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+
+    .success {
+      background: #d1fae5;
+      border-color: #6ee7b7;
+      color: #065f46;
     }
   </style>
 </head>
 
 <body>
 
-  <!-- Header Container -->
   <div id="header-container"></div>
 
   <div class="container">
     <h2>Scan QR Code</h2>
     <p>Upload a QR image or use your camera to scan.</p>
 
-    <!-- File Upload Box -->
     <div class="file-upload-container">
       <div class="file-upload-wrapper">
         <input type="file" id="fileInput" accept="image/*" class="file-upload-input">
@@ -164,87 +166,165 @@
       </div>
     </div>
 
-    <!-- Camera Button -->
     <button class="btn-camera" id="startCamera"><i class="fas fa-camera"></i> Use Camera</button>
     <video id="video" autoplay></video>
 
-    <!-- Result -->
-    <div class="result" id="result"><a href="view.html">Scanned result will appear here...</a></div>
+    <!-- FIXED: Button onclick calls scanQRCode with check -->
+    <button id="scanButton" style="margin-top:10px; padding:8px 15px; border:none; background:#2563eb; color:#fff; border-radius:5px; cursor:pointer;" onclick="handleScanButton()">Scan QR</button>
+
+    
+    <div class="result" id="result">Scanned result will appear here...</div>
   </div>
 
-  <!-- Footer Container -->
   <div id="footer-container"></div>
 
-  <!-- Include shared components -->
   <script src="components/header.js"></script>
   <script src="components/footer.js"></script>
+  <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
   <script>
-    const result = document.getElementById("result");
     const fileInput = document.getElementById("fileInput");
     const fileBox = document.querySelector(".file-upload-box");
     const fileName = document.querySelector(".file-name");
     const video = document.getElementById("video");
     const startCamera = document.getElementById("startCamera");
+    const result = document.getElementById("result");
     let cameraActive = false;
     let stream;
+    let uploadedFile = null;  // Global for button access
 
-    // --- File Upload QR Scan ---
-    fileInput.addEventListener("change", handleFile);
+    // FIXED: handleScanButton – Checks file, calls scanQRCode
+    function handleScanButton() {
+      if (!uploadedFile) {
+        alert("Please upload a QR image first!");
+        result.innerHTML = "Please upload a QR image first.";
+        result.classList.add("error");
+        return;
+      }
+      console.log('Scan button clicked for file:', uploadedFile.name);  // Debug
+      scanQRCode(uploadedFile);
+    }
+
+    // FIXED: redirectToView – With try-catch and feedback
+    function redirectToView(token) {
+      if (!token) {
+        console.log('No token provided for redirect');  // Debug
+        result.innerHTML = "No token found. Try another image.";
+        result.classList.add("error");
+        return;
+      }
+      token = token.trim();
+      console.log("Redirecting with token:", token);  // Debug
+      result.innerHTML = `<p class="success">QR detected! Token: ${token}. Redirecting to details...</p>`;  // FIXED: Show token before redirect
+      result.classList.remove("error");
+      result.classList.add("success");
+      
+      // Delay for visibility, then redirect
+      setTimeout(() => {
+        try {
+          window.location.href = `view.html?token=${encodeURIComponent(token)}`;
+          console.log('Redirect executed');  // Debug
+        } catch (err) {
+          console.error('Redirect error:', err);  // Debug
+          alert('Redirect failed: ' + err.message + '. Check if view.html exists.');
+        }
+      }, 1000);  // 1-sec delay to see feedback
+    }
+
+    // --- File Upload ---
+    fileInput.addEventListener("change", (e) => {
+      uploadedFile = e.target.files[0];
+      if (uploadedFile) {
+        fileName.textContent = uploadedFile.name;
+        result.innerHTML = "File uploaded. Click 'Scan QR' to detect.";  // FIXED: Clear previous
+        result.classList.remove("error");
+        console.log('File uploaded:', uploadedFile.name);  // Debug
+      }
+    });
+
     fileBox.addEventListener("drop", (e) => {
       e.preventDefault();
+      uploadedFile = e.dataTransfer.files[0];
       fileInput.files = e.dataTransfer.files;
-      handleFile({ target: { files: e.dataTransfer.files } });
+      if (uploadedFile) {
+        fileName.textContent = uploadedFile.name;
+        result.innerHTML = "File uploaded. Click 'Scan QR' to detect.";  // FIXED: Clear previous
+        result.classList.remove("error");
+        console.log('File dropped:', uploadedFile.name);  // Debug
+      }
     });
-    ["dragenter", "dragover"].forEach(evt =>
-      fileBox.addEventListener(evt, () => fileBox.classList.add("dragover"))
-    );
-    ["dragleave", "drop"].forEach(evt =>
-      fileBox.addEventListener(evt, () => fileBox.classList.remove("dragover"))
-    );
 
-    function handleFile(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      fileName.textContent = file.name;
+    ["dragenter", "dragover"].forEach(evt => fileBox.addEventListener(evt, e => { e.preventDefault(); fileBox.classList.add("dragover"); }));
+    ["dragleave", "drop"].forEach(evt => fileBox.addEventListener(evt, e => fileBox.classList.remove("dragover")));
+
+    // FIXED: scanQRCode – Robust detection with multiple scales & grayscale
+    function scanQRCode(file) {
+      console.log('Starting QR scan for file:', file.name);  // Debug
+      result.innerHTML = "Scanning image for QR code...";  // Feedback
+      result.classList.remove("error");
 
       const reader = new FileReader();
       reader.onload = function () {
         const img = new Image();
         img.onload = function () {
-          const canvas = document.createElement("canvas");
-          const maxDim = 500;
-          let w = img.width, h = img.height;
-          if (w > maxDim || h > maxDim) {
-            const ratio = Math.min(maxDim / w, maxDim / h);
-            w *= ratio; h *= ratio;
+          // FIXED: Try multiple scales for better detection
+          const scales = [1, 1.5, 0.5];  // Original, upscale, downscale
+          let detected = false;
+          let token = null;
+
+          scales.forEach((scale, index) => {
+            if (detected) return;  // Stop if already found
+
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const w = img.width * scale;
+            const h = img.height * scale;
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(img, 0, 0, w, h);
+
+            // FIXED: Grayscale for better jsQR on colored QRs
+            const imageData = ctx.getImageData(0, 0, w, h);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+              data[i] = data[i + 1] = data[i + 2] = avg;  // Grayscale
+            }
+            imageData.data.set(data);
+
+            const code = jsQR(imageData.data, w, h);
+            if (code && code.data) {
+              detected = true;
+              token = code.data;
+              console.log(`QR detected at scale ${scale}:`, token);  // Debug
+            }
+          });
+
+          if (detected && token) {
+            alert(`QR detected! Token: ${token.trim()}`);  // FIXED: Confirmation alert
+            redirectToView(token);  // Redirect
+          } else {
+            console.log("No QR code detected after multiple tries");  // Debug
+            result.innerHTML = "No valid QR code found. Try a clearer, higher-resolution image or use camera.";
+            result.classList.add("error");
           }
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, w, h);
-          const imageData = ctx.getImageData(0, 0, w, h);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          result.textContent = code ? "QR Content: " + code.data : "No QR code found in image.";
+        };
+        img.onerror = function() {
+          console.error('Image load error');  // Debug
+          result.innerHTML = "Error loading image. Try another file.";
+          result.classList.add("error");
         };
         img.src = reader.result;
-        showPreview(reader.result);
+      };
+      reader.onerror = function() {
+        console.error('File reader error');  // Debug
+        result.innerHTML = "Error reading file.";
+        result.classList.add("error");
       };
       reader.readAsDataURL(file);
     }
 
-    function showPreview(src) {
-      let preview = document.querySelector(".file-preview");
-      if (!preview) {
-        preview = document.createElement("img");
-        preview.className = "file-preview";
-        fileBox.appendChild(preview);
-      }
-      preview.src = src;
-      preview.style.display = "block";
-    }
-
-    // --- Camera QR Scan ---
+    // --- Camera Scan (Unchanged – Already Works) ---
     startCamera.addEventListener("click", async () => {
       if (!cameraActive) {
         try {
@@ -254,41 +334,75 @@
           cameraActive = true;
           startCamera.textContent = "Stop Camera";
           scanCamera();
+          result.innerHTML = "Camera active. Point at a QR code.";
+          console.log('Camera started');  // Debug
         } catch (err) {
-          alert("Camera access denied or not available.");
+          result.innerHTML = "Camera access denied or unavailable. Please check permissions.";
+          console.error('Camera error:', err);  // Debug
+          result.classList.add("error");
         }
       } else {
         stopCamera();
+        result.innerHTML = "Scanned result will appear here...";
       }
     });
 
     function stopCamera() {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
+      if (stream) stream.getTracks().forEach(track => track.stop());
       video.style.display = "none";
       cameraActive = false;
       startCamera.textContent = "Use Camera";
+      console.log('Camera stopped');  // Debug
     }
 
     function scanCamera() {
       if (!cameraActive) return;
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
-      if (code) {
-        result.textContent = "QR Content: " + code.data;
-        stopCamera();
-        return;
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+        if (code && code.data) {
+          console.log('QR detected in camera:', code.data);  // Debug
+          stopCamera();
+          result.innerHTML = `<p class="success">QR detected! Token: ${code.data.trim()}. Redirecting...</p>`;  // FIXED: Feedback
+          result.classList.add("success");
+          alert(`QR detected in camera! Token: ${code.data.trim()}`);  // Confirmation
+          redirectToView(code.data);  // Redirect
+          return;
+        }
       }
       requestAnimationFrame(scanCamera);
     }
   </script>
 
-</body>
+  <!-- Global Backend Integration Script (Simplified for this page) -->
+  <script>
+    let csrfToken = localStorage.getItem('csrf') || '';  
 
+    async function getCSRF() {
+      try {
+        const response = await fetch('api/auth.php?action=get_csrf');
+        if (!response.ok) throw new Error('CSRF fetch failed');
+        const data = await response.json();
+        csrfToken = data.csrf;
+        localStorage.setItem('csrf', csrfToken);  
+        return csrfToken;
+      } catch (err) {
+        console.error('CSRF fetch error:', err);
+        return null;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      await getCSRF();  
+    });
+  </script>
+
+</body>
 </html>
